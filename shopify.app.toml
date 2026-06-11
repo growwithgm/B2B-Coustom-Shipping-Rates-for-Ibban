@@ -1,12 +1,19 @@
-# Shopify CLI app config (used to deploy the function extension).
+# GN B2B Shipping — single CLI-managed app handling BOTH components:
+#   - owns the delivery customization Function (extensions/b2b-delivery-visibility)
+#   - provides the Admin API credentials for the setup scripts (carrier
+#     registration, function activation, weight audit) via the OAuth
+#     client credentials grant
 #
-# Run `shopify app config link` once from the repo root: it creates the app in
-# your Partner org (or links an existing one) and fills in client_id below.
-# Distribution: choose CUSTOM distribution for this single-store app.
+# THIS FILE is the source of truth ([build].include_config_on_deploy = true):
+# `shopify app deploy` pushes this config together with the function and
+# releases the version — you never fill in the Dev Dashboard "Create version"
+# form (and never hit its "App URL must be a valid HTTP URL" error) manually.
 
-client_id = ""
-name = "ibban-b2b-shipping"
-handle = "ibban-b2b-shipping"
+client_id = "9ea53daf3e8d6f84fc35c4d4c6cf1670"
+name = "GN B2B Shipping"
+
+# This app has no admin UI (Function + backend scripts only), so the URL is a
+# formality — it just has to be a valid HTTPS URL. The Render service URL fits.
 application_url = "https://ibban-b2b-shipping.onrender.com"
 embedded = false
 
@@ -14,7 +21,10 @@ embedded = false
 include_config_on_deploy = true
 
 [access_scopes]
-scopes = "write_shipping,write_delivery_customizations,read_products"
+# write_shipping                -> carrierServiceCreate/Update (read_shipping implied)
+# write_delivery_customizations -> deliveryCustomizationCreate (read implied)
+# read_products + read_inventory -> weight audit (weights live on inventory items)
+scopes = "write_shipping,write_delivery_customizations,read_products,read_inventory"
 
 [auth]
 redirect_urls = ["https://ibban-b2b-shipping.onrender.com/auth/callback"]

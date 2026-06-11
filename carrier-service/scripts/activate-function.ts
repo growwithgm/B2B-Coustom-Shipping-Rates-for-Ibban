@@ -120,11 +120,12 @@ async function main(): Promise<void> {
   const errors = result.deliveryCustomizationCreate.userErrors;
   if (errors.some((e) => /function/i.test(e.message))) {
     console.error(
-      "deliveryCustomizationCreate rejected the functionId. Shopify only lets the app that\n" +
-        "OWNS the function create the customization, so a token from a different custom app\n" +
-        "may be refused. Fallback: run `shopify app dev` and execute the same mutation from\n" +
-        "the dev console's GraphiQL (it runs as the owning app), or check Settings →\n" +
-        "Shipping and delivery → Delivery customizations in the admin.",
+      "deliveryCustomizationCreate rejected the functionId. Only the app that OWNS the\n" +
+        "function may create the customization — with the client credentials grant the token\n" +
+        "already belongs to GN B2B Shipping, so this usually means the function isn't on the\n" +
+        "store yet. Check that `shopify app deploy` succeeded (released, not --no-release)\n" +
+        "and that the app is installed on the store, then re-run. If you set\n" +
+        "ADMIN_API_ACCESS_TOKEN from a DIFFERENT app, unset it so the grant is used instead.",
     );
   }
   failOnUserErrors("deliveryCustomizationCreate", errors);
