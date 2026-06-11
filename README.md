@@ -85,8 +85,18 @@ This matches the repo to the existing app. Verify afterwards that `client_id` in
 all other values should survive — scopes, `embedded = false`, the extension stays wired).
 
 ```bash
+# REQUIRED before deploy: the CLI's JS-function build needs the
+# @shopify/shopify_function library installed inside the extension.
+npm install --prefix extensions/b2b-delivery-visibility
+
 shopify app deploy          # pushes config + the Function, creates AND releases the version
 ```
+
+The function build runs three steps (GraphQL typegen → ESBuild bundle → Javy wasm
+compile) and downloads its toolchain on first run. A committed minimal
+`schema.graphql` makes typegen work out of the box; to refresh it to the full
+version-exact schema any time, run
+`shopify app function schema --path extensions/b2b-delivery-visibility`.
 
 (`--no-release` exists if you ever want a staged version; you don't need it here.)
 

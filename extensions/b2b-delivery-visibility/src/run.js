@@ -1,4 +1,5 @@
 // Delivery Customization Function — B2B/DTC shipping option visibility.
+// Target: cart.delivery-options.transform.run
 //
 // KEEP IN SYNC with carrier-service/src/config.ts:
 //   B2B_RATE_TITLE      === SHIPPING_CONFIG.rateServiceName
@@ -13,8 +14,13 @@ const NATIVE_RATE_TITLES = [
 ];
 
 /**
- * @param {import("../generated/api").RunInput} input
- * @returns {import("../generated/api").FunctionRunResult}
+ * @typedef {import("../generated/api").RunInput} RunInput
+ * @typedef {import("../generated/api").CartDeliveryOptionsTransformRunResult} CartDeliveryOptionsTransformRunResult
+ */
+
+/**
+ * @param {RunInput} input
+ * @returns {CartDeliveryOptionsTransformRunResult}
  */
 export function run(input) {
   const isB2B = Boolean(input.cart.buyerIdentity?.purchasingCompany?.company);
@@ -27,7 +33,9 @@ export function run(input) {
         ? NATIVE_RATE_TITLES.includes(title) // B2B buyer: hide the native flat rates
         : title === B2B_RATE_TITLE; // DTC buyer: hide the per-kg rate
       if (shouldHide) {
-        operations.push({ hide: { deliveryOptionHandle: option.handle } });
+        operations.push({
+          deliveryOptionHide: { deliveryOptionHandle: option.handle },
+        });
       }
     }
   }

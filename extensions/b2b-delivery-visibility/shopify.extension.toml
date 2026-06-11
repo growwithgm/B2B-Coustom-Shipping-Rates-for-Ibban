@@ -7,10 +7,14 @@ type = "function"
 description = "Shows the B2B per-kg carrier rate only to B2B buyers; hides native flat rates from B2B and the per-kg rate from DTC."
 
   [[extensions.targeting]]
-  target = "purchase.delivery-customization.run"
+  target = "cart.delivery-options.transform.run"
   input_query = "src/run.graphql"
   export = "run"
 
+  # JS functions are built by the Shopify CLI itself (ESBuild + Javy); the
+  # empty command is the template default. The CLI detects a JS function by
+  # the presence of src/index.js and requires @shopify/shopify_function to be
+  # installed (run `npm install` in this directory before `shopify app deploy`).
   [extensions.build]
   command = ""
   path = "dist/function.wasm"

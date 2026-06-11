@@ -1,0 +1,81 @@
+# Minimal, hand-maintained subset of the Delivery Customization Function API
+# schema (target cart.delivery-options.transform.run) — just enough for the
+# build's GraphQL type generation to run. Type names match the documented API.
+#
+# To replace it with the full, version-exact schema (recommended once you have
+# CLI access to the app), run from the repo root:
+#   shopify app function schema --path extensions/b2b-delivery-visibility
+
+schema {
+  query: Input
+  mutation: MutationRoot
+}
+
+scalar Handle
+scalar Decimal
+scalar Void
+scalar ID
+
+type Input {
+  cart: Cart!
+}
+
+type Cart {
+  buyerIdentity: BuyerIdentity
+  deliveryGroups: [CartDeliveryGroup!]!
+}
+
+type BuyerIdentity {
+  purchasingCompany: PurchasingCompany
+}
+
+type PurchasingCompany {
+  company: Company!
+}
+
+type Company {
+  id: ID!
+  name: String!
+}
+
+type CartDeliveryGroup {
+  deliveryOptions: [CartDeliveryOption!]!
+}
+
+type CartDeliveryOption {
+  handle: Handle!
+  title: String
+  cost: MoneyV2!
+}
+
+type MoneyV2 {
+  amount: Decimal!
+}
+
+type MutationRoot {
+  cartDeliveryOptionsTransformRun(result: CartDeliveryOptionsTransformRunResult!): Void!
+}
+
+input CartDeliveryOptionsTransformRunResult {
+  operations: [Operation!]!
+}
+
+input Operation {
+  deliveryOptionHide: DeliveryOptionHideOperation
+  deliveryOptionMove: DeliveryOptionMoveOperation
+  deliveryOptionRename: DeliveryOptionRenameOperation
+}
+
+input DeliveryOptionHideOperation {
+  deliveryOptionHandle: Handle!
+}
+
+input DeliveryOptionMoveOperation {
+  deliveryOptionHandle: Handle!
+  index: Int!
+}
+
+input DeliveryOptionRenameOperation {
+  deliveryOptionHandle: Handle!
+  title: String!
+}
