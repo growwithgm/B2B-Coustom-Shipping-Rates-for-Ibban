@@ -1,0 +1,23 @@
+# Shopify CLI app config (used to deploy the function extension).
+#
+# Run `shopify app config link` once from the repo root: it creates the app in
+# your Partner org (or links an existing one) and fills in client_id below.
+# Distribution: choose CUSTOM distribution for this single-store app.
+
+client_id = ""
+name = "ibban-b2b-shipping"
+handle = "ibban-b2b-shipping"
+application_url = "https://ibban-b2b-shipping.onrender.com"
+embedded = false
+
+[build]
+include_config_on_deploy = true
+
+[access_scopes]
+scopes = "write_shipping,write_delivery_customizations,read_products"
+
+[auth]
+redirect_urls = ["https://ibban-b2b-shipping.onrender.com/auth/callback"]
+
+[webhooks]
+api_version = "2026-01"

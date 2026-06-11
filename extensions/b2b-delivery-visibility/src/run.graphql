@@ -1,0 +1,21 @@
+query Input {
+  cart {
+    buyerIdentity {
+      purchasingCompany {
+        company {
+          id
+          name
+        }
+      }
+    }
+    deliveryGroups {
+      deliveryOptions {
+        handle
+        title
+        cost {
+          amount
+        }
+      }
+    }
+  }
+}

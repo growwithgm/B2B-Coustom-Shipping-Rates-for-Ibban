@@ -1,0 +1,12 @@
+{
+  "name": "ibban-b2b-shipping",
+  "version": "1.0.0",
+  "private": true,
+  "description": "B2B-only weight-based shipping for ibban.com — Carrier Service app (Render) + Delivery Customization Function (Shopify)",
+  "scripts": {
+    "register-carrier": "npm --prefix carrier-service run register-carrier",
+    "activate-function": "npm --prefix carrier-service run activate-function",
+    "check-weights": "npm --prefix carrier-service run check-weights",
+    "test": "npm --prefix carrier-service test && npm --prefix extensions/b2b-delivery-visibility test"
+  }
+}

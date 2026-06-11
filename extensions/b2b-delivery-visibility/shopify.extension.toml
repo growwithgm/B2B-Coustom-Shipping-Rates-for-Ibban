@@ -1,0 +1,17 @@
+api_version = "2026-01"
+
+[[extensions]]
+name = "b2b-delivery-visibility"
+handle = "b2b-delivery-visibility"
+type = "function"
+description = "Shows the B2B per-kg carrier rate only to B2B buyers; hides native flat rates from B2B and the per-kg rate from DTC."
+
+  [[extensions.targeting]]
+  target = "purchase.delivery-customization.run"
+  input_query = "src/run.graphql"
+  export = "run"
+
+  [extensions.build]
+  command = ""
+  path = "dist/function.wasm"
+  watch = [ "src/**/*.js" ]
