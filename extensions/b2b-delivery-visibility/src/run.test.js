@@ -35,6 +35,23 @@ describe("delivery customization run", () => {
     expect(result.operations).toEqual([{ deliveryOptionHide: { deliveryOptionHandle: "b2b-handle" } }]);
   });
 
+  it("DTC buyer: hides the carrier rate even when Shopify prepends the carrier name", () => {
+    const result = run({
+      cart: {
+        buyerIdentity: null,
+        deliveryGroups: [
+          {
+            deliveryOptions: [
+              { handle: "std", title: "Standard Shipping", cost: { amount: "4.95" } },
+              { handle: "b2b", title: "ibBan B2B Shipping B2B Weight Shipping", cost: { amount: "0.6" } },
+            ],
+          },
+        ],
+      },
+    });
+    expect(result.operations).toEqual([{ deliveryOptionHide: { deliveryOptionHandle: "b2b" } }]);
+  });
+
   it("does not touch unknown option titles", () => {
     const result = run({
       cart: {

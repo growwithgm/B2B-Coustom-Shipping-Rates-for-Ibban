@@ -31,7 +31,11 @@ export function run(input) {
       const title = option.title ?? "";
       const shouldHide = isB2B
         ? NATIVE_RATE_TITLES.includes(title) // B2B buyer: hide the native flat rates
-        : title === B2B_RATE_TITLE; // DTC buyer: hide the per-kg rate
+        // DTC buyer: hide the per-kg carrier rate. Shopify prepends the
+        // carrier name to carrier-service option titles internally (e.g.
+        // "ibBan B2B Shipping B2B Weight Shipping"), so match by substring
+        // rather than strict equality.
+        : title.includes(B2B_RATE_TITLE);
       if (shouldHide) {
         operations.push({
           deliveryOptionHide: { deliveryOptionHandle: option.handle },
