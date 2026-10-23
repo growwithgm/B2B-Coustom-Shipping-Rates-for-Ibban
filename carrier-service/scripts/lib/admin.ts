@@ -48,7 +48,7 @@ async function getAccessToken(): Promise<string> {
     console.error(
       "No Admin API credentials configured.\n" +
         "Set SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET (Dev Dashboard → Apps → " +
-        "GN B2B Shipping → Settings) to use the client credentials grant, or set " +
+        "ibBan B2B Shipping New → Settings) to use the client credentials grant, or set " +
         "ADMIN_API_ACCESS_TOKEN to use an existing token directly.",
     );
     process.exit(1);

@@ -9,7 +9,7 @@ const SHOP_DOMAIN = (process.env.SHOP_DOMAIN ?? "").toLowerCase();
 if (!CALLBACK_SECRET) {
   console.warn(
     "[startup] CALLBACK_SECRET is not set — the rates endpoint will reject every request. " +
-      "Set it in the Render environment (and use the same value when running register-carrier).",
+      "Set it in the Vercel project's environment variables (and use the same value when running register-carrier).",
   );
 }
 
@@ -65,6 +65,13 @@ app.post("/carrier-service/rates/:secret", (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`[startup] carrier service listening on port ${PORT}`);
-});
+// On Vercel the exported app becomes a single Vercel Function (zero-config
+// Express: src/server.ts is auto-detected). Vercel sets VERCEL=1, so we only
+// open a port ourselves when running locally (`npm run dev` / `npm start`).
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`[startup] carrier service listening on port ${PORT}`);
+  });
+}
+
+export default app;

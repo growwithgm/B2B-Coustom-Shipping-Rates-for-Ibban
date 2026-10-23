@@ -10,9 +10,10 @@ existing native flat rates, completely untouched.
 | Basis | total cart weight, true per-kg (1.3 kg → €5.20) |
 | Currency | EUR |
 | Applies to | B2B (company) buyers only |
-| DTC keeps | "Standard Shipping" €4.95 + "Free Shipping (Orders over €99.99)" |
+| DTC keeps | all native rates of the General profile, whatever they are called |
 | Per-kg rate title at checkout | **B2B Weight Shipping** |
-| Shopify app | **GN B2B Shipping** (CLI-managed, Client ID `9ea53daf3e8d6f84fc35c4d4c6cf1670`) |
+| Shopify app | installed on ibban.com as **ibBan B2B Shipping New** (by Ibban.com); repo config was created as GN B2B Shipping — run `shopify app config link` against the installed app |
+| Hosting | carrier service on **Vercel** (zero-config Express, Fluid compute) |
 
 All business rules live in **one file**: [`carrier-service/src/config.ts`](carrier-service/src/config.ts).
 Adding a zone later = appending `{ name, countries: ["XX"], perKg: 2.5 }` to `zones`.
@@ -22,10 +23,10 @@ Adding a zone later = appending `{ name, countries: ["XX"], perKg: 2.5 }` to `zo
 ```
                 ┌──────────────────────────────────────────────┐
  Checkout ─────▶│ Shopify                                       │
-                │ 1) Carrier Service callback ──────────────────┼─▶ Render app (Component A)
+                │ 1) Carrier Service callback ──────────────────┼─▶ Vercel app (Component A)
                 │    "B2B Weight Shipping" = €/kg × cart weight │◀─ rate JSON (cents, EUR)
                 │ 2) Delivery Customization Function (Comp. B): │
-                │    B2B buyer → hide native flat rates         │
+                │    B2B buyer → hide every non-per-kg option   │
                 │    DTC buyer → hide the per-kg rate           │
                 └──────────────────────────────────────────────┘
 ```
@@ -34,41 +35,53 @@ Two components are required because the Carrier Service callback does **not** in
 B2B/DTC information — the carrier app returns its rate for everyone, and the Function does
 the visibility split per buyer.
 
-**One CLI-managed app — "GN B2B Shipping" — handles both components:**
+**One CLI-managed app — "ibBan B2B Shipping New" on the store — handles both components:**
 it owns the Function extension, declares all Admin API scopes in
 [`shopify.app.toml`](shopify.app.toml), and its Client ID + Secret give the setup scripts
 their Admin API access (via the OAuth **client credentials grant** — there is no manual
 `shpat_` token reveal for CLI/Dev-Dashboard apps).
 
 - **Component A** — [`carrier-service/`](carrier-service/): Node 20 + Express + TypeScript,
-  hosted on Render (always-on paid instance). Stateless; callback URL contains a random
-  secret segment; requests from other shops are rejected.
+  hosted on Vercel (the Express app becomes one Vercel Function; Fluid compute keeps cold
+  starts well under Shopify's ~10 s callback timeout). Stateless; callback URL contains a
+  random secret segment; requests from other shops are rejected.
 - **Component B** — [`extensions/b2b-delivery-visibility/`](extensions/b2b-delivery-visibility/):
   Shopify Function (delivery customization), deployed via Shopify CLI, runs on Shopify, free.
 
 ## Repo layout
 
 ```
-shopify.app.toml            GN B2B Shipping config — scopes, embedded=false (source of truth)
-carrier-service/            Component A (deployed to Render, rootDir in render.yaml)
-  src/config.ts             ← THE config: zones, per-kg prices, rate titles
+shopify.app.toml            app config — scopes, embedded=false (source of truth)
+carrier-service/            Component A (Vercel project, Root Directory = carrier-service)
+  src/config.ts             ← THE config: zones, per-kg prices, rate title
   src/rates.ts              pure rate math (unit-tested)
-  src/server.ts             Express app: POST /carrier-service/rates/:secret, GET /health
+  src/server.ts             Express app (default export for Vercel): POST /carrier-service/rates/:secret, GET /health
   scripts/lib/admin.ts      Admin GraphQL client + client-credentials token fetch
   scripts/register-carrier.ts    registers/updates the carrier service (idempotent)
   scripts/activate-function.ts   creates + enables the delivery customization
   scripts/check-weights.ts       audits catalog for variants with missing/zero weight
 extensions/b2b-delivery-visibility/   Component B (deployed with `shopify app deploy`)
   src/run.graphql           function input query
-  src/run.js                hide logic (titles mirrored from config.ts — keep in sync!)
-render.yaml                 Render blueprint for Component A
+  src/run.js                hide logic (per-kg title mirrored from config.ts — keep in sync!)
 ```
+
+## Moving from Render to Vercel (Oct 2026)
+
+The carrier service used to run on Render (`ibban-b2b-shipping.onrender.com`). To move it:
+
+1. Deploy `carrier-service` on Vercel (runbook step 4) with the **same** `SHOP_DOMAIN`
+   and `CALLBACK_SECRET` values.
+2. Set `APP_URL` in `carrier-service/.env` to the Vercel production URL and run
+   `npm run register-carrier` (runbook step 5) — it updates the existing carrier's
+   callback URL in place; zones that already use the carrier keep it.
+3. Test a B2B and a DTC checkout (step 8), check the Vercel logs show the rate requests,
+   then shut the Render service down.
 
 ## Deploy runbook
 
 Prereqs: Node 20+, Git, Shopify CLI (`npm i -g @shopify/cli@latest`).
 Every step below is labeled **[CLI]**, **[Dev Dashboard]** (dev.shopify.com/dashboard),
-or **[Render]** / **[Shopify admin]**. You never touch the Dev Dashboard's
+or **[Vercel]** / **[Shopify admin]**. You never touch the Dev Dashboard's
 "Create version / App URL" form — `shopify app deploy` creates and releases versions
 from `shopify.app.toml` (`include_config_on_deploy = true`).
 
@@ -77,12 +90,16 @@ from `shopify.app.toml` (`include_config_on_deploy = true`).
 From the repo root:
 
 ```bash
-shopify app config link     # pick your organization, then the existing app "GN B2B Shipping"
+shopify app config link     # pick the Ibban.com organization, then the app installed on the
+                            # store ("ibBan B2B Shipping New")
 ```
 
-This matches the repo to the existing app. Verify afterwards that `client_id` in
-`shopify.app.toml` is still `9ea53daf3e8d6f84fc35c4d4c6cf1670` (the CLI rewrites the file;
-all other values should survive — scopes, `embedded = false`, the extension stays wired).
+This matches the repo to the app that is actually installed on ibban.com and owns the
+live Function + carrier service. That app lives in the **Ibban.com** Dev Dashboard
+organization (open it from the store admin: store name menu → Dev Dashboard), not in the
+Grow Nest organization — the two "GN B2B Shipping" apps there have 0 installs. The CLI
+rewrites `client_id` in `shopify.app.toml`; all other values should survive (scopes,
+`embedded = false`, the extension stays wired).
 
 ```bash
 # REQUIRED before deploy: the CLI's JS-function build needs the
@@ -106,7 +123,7 @@ version-exact schema any time, run
 
 ### 2. Install the app on the store — [Dev Dashboard]
 
-1. dev.shopify.com/dashboard → **Apps** → **GN B2B Shipping** → **Home**
+1. Dev Dashboard (Ibban.com organization) → **Apps** → **ibBan B2B Shipping New** → **Home**
 2. Scroll to **Installs** → **Install app** → select the ibban store → **Install**
 
 This grants the four scopes. Note for later: if you ever **change** scopes in the TOML,
@@ -118,7 +135,7 @@ are not applied to installed stores automatically.
 There is no `shpat_` token to copy anywhere. The scripts fetch their own 24-hour Admin
 token via the **client credentials grant**, using the app's Client ID + Secret:
 
-1. Dev Dashboard → **Apps → GN B2B Shipping → Settings** → copy **Client ID** and
+1. Dev Dashboard (Ibban.com organization) → **Apps → ibBan B2B Shipping New → Settings** → copy **Client ID** and
    **Client secret**.
 2. ```bash
    cd carrier-service
@@ -134,18 +151,23 @@ name menu → Dev Dashboard) and check the app is listed there.
 (The Dev Dashboard's "App Automation Tokens" are **not** this — those authenticate the
 CLI in CI/CD pipelines, not Admin API calls.)
 
-### 4. Deploy Component A — [Render]
+### 4. Deploy Component A — [Vercel]
 
-1. Render dashboard → **New → Blueprint** → pick this GitHub repo (uses `render.yaml`),
-   or create a Web Service manually: root directory `carrier-service`, build
-   `npm ci && npm run build`, start `npm start`, health check path `/health`, any **paid**
-   instance type (always-on; a cold start would exceed Shopify's ~10 s callback timeout).
-2. Set environment variables on the service:
+1. vercel.com → **Add New… → Project** → import this GitHub repo.
+2. **Root Directory:** `carrier-service`. Framework preset: **Express** (auto-detected —
+   `src/server.ts` default-exports the app). Leave build/output settings on default.
+3. **Environment Variables** (Production):
    - `SHOP_DOMAIN` — the store's `*.myshopify.com` domain
    - `CALLBACK_SECRET` — generate with `openssl rand -hex 16` (same value as in `.env`)
-3. Deploy, then verify: `curl https://<your-app>.onrender.com/health` → `{"status":"ok"}`.
+4. Deploy, then verify: open `https://<project>.vercel.app/health` → `{"status":"ok"}`.
+   Use the **production** domain (`<project>.vercel.app`), never a preview URL — preview
+   deployments sit behind Vercel's deployment protection and would reject Shopify.
+5. Put that URL in `carrier-service/.env` as `APP_URL`, and in `shopify.app.toml`
+   (`application_url` + `redirect_urls`).
 
-**⏸ PAUSE — confirm the Render URL and a green health check before continuing.**
+Every push to `main` redeploys automatically.
+
+**⏸ PAUSE — confirm the Vercel URL and a green health check before continuing.**
 
 ### 5. Register the carrier service — [CLI, then Shopify admin]
 
@@ -156,9 +178,10 @@ npm run register-carrier
 
 The script is idempotent (re-running updates the callback URL). Afterwards, in
 **Shopify admin → Settings → Shipping and delivery**, open the **General** shipping
-profile and make sure the new carrier **"ibBan B2B Shipping"** is added as a rate
-provider on the relevant zones so its rate is offered at checkout.
-**Do NOT touch the existing "Standard Shipping" / "Free Shipping" rates.**
+profile and make sure the carrier **"ibBan B2B Shipping"** is added as a rate provider
+on **every** zone (Add shipping option → Use carrier or app to calculate rates). A zone
+without it never offers "B2B Weight Shipping", so B2B buyers there fall back to the native
+rates — including free shipping. Leave the existing native rates as they are.
 
 Test: add a weighted product to the cart and go to checkout — at this point **everyone**
 (B2B and DTC) sees "B2B Weight Shipping" alongside the native rates. That's expected
@@ -195,9 +218,10 @@ Fix weights in admin (include packaging weight) before going live.
 
 ### 8. Test checklist
 
-- [ ] **DTC checkout** (not logged in as a company): only "Standard Shipping €4.95" /
-      "Free Shipping (Orders over €99.99)". Per-kg rate hidden.
-- [ ] **B2B checkout** (company login): only "B2B Weight Shipping". Native rates hidden.
+- [ ] **DTC checkout** (not logged in as a company): only the native rates
+      ("Standard delivery…" / "FREE delivery…"). Per-kg rate hidden.
+- [ ] **B2B checkout** (company login): only "B2B Weight Shipping". Native rates hidden,
+      including FREE delivery on orders above the free-shipping threshold.
 - [ ] Spain B2B, 2 kg → **€2.00**
 - [ ] Spain B2B, 1.3 kg → **€1.30**
 - [ ] Non-ES B2B, 2 kg → **€8.00**
@@ -207,19 +231,21 @@ Fix weights in admin (include packaging weight) before going live.
 ## Changing prices / zones / titles later
 
 1. Edit `carrier-service/src/config.ts` (zones, perKg, minimumCharge…) → push to GitHub →
-   Render auto-deploys. Done — no re-registration needed.
-2. **Only if you rename rate titles** (`rateServiceName` / `nativeRateTitles`): also update
-   the constants at the top of `extensions/b2b-delivery-visibility/src/run.js` and run
-   `shopify app deploy`. The function matches titles **exactly** — if they drift, B2B/DTC
-   hiding silently breaks.
-3. **Only if you change scopes** in `shopify.app.toml`: `shopify app deploy`, then
+   Vercel auto-deploys. Done — no re-registration needed.
+2. **Renaming or adding native rates** in Shopify admin needs **no code change** — the
+   Function hides every non-carrier option for B2B buyers, whatever it is called. Only
+   remember to add the carrier to any **new zone** (see step 5).
+3. **Only if you rename the per-kg rate** (`rateServiceName`): also update
+   `B2B_RATE_TITLE` at the top of `extensions/b2b-delivery-visibility/src/run.js` and run
+   `shopify app deploy`. If they drift, B2B/DTC hiding silently breaks.
+4. **Only if you change scopes** in `shopify.app.toml`: `shopify app deploy`, then
    re-approve the scopes on the store (installed stores don't pick up scope changes
    automatically).
 
 ## Operations notes
 
-- **Logs:** every rate request logs one line on Render: destination country, zone, total kg,
-  €/kg, final price, and warnings (e.g. zero cart weight).
+- **Logs:** every rate request logs one line (Vercel → project → Logs): destination
+  country, zone, total kg, €/kg, final price, and warnings (e.g. zero cart weight).
 - **Uptime:** point a monitor (UptimeRobot etc.) at `GET /health`. If the app is down or
   slower than ~10 s, Shopify shows no per-kg rate and B2B buyers may see no shipping options.
 - **Security:** the callback path embeds `CALLBACK_SECRET` (carrier callbacks aren't

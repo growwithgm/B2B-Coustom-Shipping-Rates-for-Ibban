@@ -1,4 +1,4 @@
-// Registers (or updates) the carrier service pointing at the Render app.
+// Registers (or updates) the carrier service pointing at the Vercel app.
 // Idempotent: re-running updates the callback URL of the existing service.
 //
 // Required env: SHOP_DOMAIN, ADMIN_API_ACCESS_TOKEN, APP_URL, CALLBACK_SECRET

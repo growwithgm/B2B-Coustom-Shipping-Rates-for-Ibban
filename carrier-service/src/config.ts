@@ -3,11 +3,12 @@
 // To add a new zone later, append { name, countries: [...], perKg } to `zones`.
 // First match wins; any country not matched falls back to `defaultPerKg`.
 //
-// IMPORTANT: `rateServiceName` and `nativeRateTitles` are mirrored in the
-// Delivery Customization Function at
-//   extensions/b2b-delivery-visibility/src/run.js
-// If you change them here, change them there too and redeploy the function
+// IMPORTANT: `rateServiceName` is mirrored in the Delivery Customization
+// Function at extensions/b2b-delivery-visibility/src/run.js (B2B_RATE_TITLE).
+// If you change it here, change it there too and redeploy the function
 // (`shopify app deploy`), otherwise the B2B/DTC hiding breaks.
+// The store's native rate names do NOT matter any more — the function hides
+// every non-carrier option for B2B buyers, whatever the native rates are called.
 
 export interface ShippingZone {
   name: string;
@@ -31,8 +32,6 @@ export interface ShippingConfig {
   zones: ShippingZone[];
   /** EUR per kg for every country NOT matched by a zone */
   defaultPerKg: number;
-  /** Native rate titles to HIDE from B2B buyers (must match checkout titles exactly) */
-  nativeRateTitles: string[];
 }
 
 export const SHIPPING_CONFIG: ShippingConfig = {
@@ -46,10 +45,4 @@ export const SHIPPING_CONFIG: ShippingConfig = {
     { name: "Spain", countries: ["ES"], perKg: 1.0 },
   ],
   defaultPerKg: 4.0,
-  // Verified 2026-06-11 against the live General profile via the Admin API —
-  // these match the store's method definition names character-for-character.
-  nativeRateTitles: [
-    "Standard Shipping",
-    "Free Shipping (Orders over €99.99)",
-  ],
 };
