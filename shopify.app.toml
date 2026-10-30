@@ -13,9 +13,9 @@ client_id = "9ea53daf3e8d6f84fc35c4d4c6cf1670"
 name = "GN B2B Shipping"
 
 # This app has no admin UI (Function + backend scripts only), so the URL is a
-# formality — it just has to be a valid HTTPS URL. The Vercel production URL
-# of the carrier service fits (update both lines if the Vercel URL differs).
-application_url = "https://ibban-b2b-shipping.vercel.app"
+# formality — it just has to be a valid HTTPS URL. The carrier service URL fits
+# (Render today; switch both lines to the Vercel URL after the move).
+application_url = "https://ibban-b2b-shipping.onrender.com"
 embedded = false
 
 [build]
@@ -28,7 +28,7 @@ include_config_on_deploy = true
 scopes = "write_shipping,write_delivery_customizations,read_products,read_inventory"
 
 [auth]
-redirect_urls = ["https://ibban-b2b-shipping.vercel.app/auth/callback"]
+redirect_urls = ["https://ibban-b2b-shipping.onrender.com/auth/callback"]
 
 [webhooks]
 api_version = "2026-01"

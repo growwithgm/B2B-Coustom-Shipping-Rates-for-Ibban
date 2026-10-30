@@ -65,7 +65,10 @@ extensions/b2b-delivery-visibility/   Component B (deployed with `shopify app de
   src/run.js                hide logic (per-kg title mirrored from config.ts — keep in sync!)
 ```
 
-## Moving from Render to Vercel (Oct 2026)
+> **Current hosting (Oct 2026): still Render** — `https://ibban-b2b-shipping.onrender.com`
+> (deployed from `render.yaml`). The code is Vercel-ready; the move below is planned, not done.
+
+## Moving from Render to Vercel (planned)
 
 The carrier service used to run on Render (`ibban-b2b-shipping.onrender.com`). To move it:
 

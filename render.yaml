@@ -1,0 +1,25 @@
+# Render Blueprint — deploys Component A (the carrier service) as a Web Service.
+# Connect this repo in the Render dashboard ("New > Blueprint") or create the
+# Web Service manually with the same settings.
+services:
+  - type: web
+    name: ibban-b2b-shipping
+    runtime: node
+    # Any PAID instance type is always-on (no cold starts). Bump if you need more headroom.
+    plan: starter
+    rootDir: carrier-service
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # The store's *.myshopify.com domain (NOT ibban.com). Set in the dashboard.
+      - key: SHOP_DOMAIN
+        sync: false
+      # Random secret embedded in the carrier callback URL. Generate with:
+      #   openssl rand -hex 16
+      # Must match the CALLBACK_SECRET used when running `npm run register-carrier`.
+      - key: CALLBACK_SECRET
+        sync: false
