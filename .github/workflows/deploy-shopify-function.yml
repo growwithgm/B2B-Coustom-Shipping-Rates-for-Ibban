@@ -30,9 +30,9 @@ jobs:
     env:
       SHOPIFY_SERVICE_ACCOUNT_TOKEN: ${{ secrets.SHOPIFY_SERVICE_ACCOUNT_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
 
@@ -67,7 +67,8 @@ jobs:
           if [ "${{ inputs.release }}" = "true" ]; then
             shopify app deploy --config ibban --allow-updates 2>&1 | tee deploy.log
           else
-            shopify app deploy --config ibban --allow-updates --no-release 2>&1 | tee deploy.log
+            # --no-release only creates a version; the CLI rejects --allow-updates with it
+            shopify app deploy --config ibban --no-release 2>&1 | tee deploy.log
           fi
 
       - name: Write the deploy output to the run summary

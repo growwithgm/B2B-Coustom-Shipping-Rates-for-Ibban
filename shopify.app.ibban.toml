@@ -3,23 +3,23 @@
 # and the "ibBan B2B Shipping" carrier service.
 #
 # Deployed by .github/workflows/deploy-shopify-function.yml, which first runs
-# `shopify app config pull --config ibban`, so the live configuration (name,
-# scopes, URLs) is taken from Shopify and pushed back unchanged — only the
-# Function code changes. The values below are just a valid starting point.
+# `shopify app config pull --config ibban`, so the live configuration is taken
+# from Shopify and pushed back unchanged — only the Function code changes.
+# The values below mirror that live config (pulled 2026-10-30).
 #
 # (shopify.app.toml is the older "GN B2B Shipping" app in the Grow Nest org,
 # which has no installs. Do not deploy that one to ibban.com.)
 
 client_id = "ed90385ba90f0bfc5c460e5e3b3ac4f1"
-name = "ibBan B2B Shipping New"
-application_url = "https://ibban-b2b-shipping.onrender.com"
-embedded = false
-
-[access_scopes]
-scopes = "write_shipping,write_delivery_customizations,read_products,read_inventory"
-
-[auth]
-redirect_urls = ["https://ibban-b2b-shipping.onrender.com/auth/callback"]
+name = " ibBan B2B Shipping New"
+application_url = "https://shopify.dev/apps/default-app-home"
+embedded = true
 
 [webhooks]
-api_version = "2026-01"
+api_version = "2026-07"
+
+[access_scopes]
+scopes = "read_customers,read_inventory,read_products,write_delivery_customizations,write_shipping"
+
+[auth]
+redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
