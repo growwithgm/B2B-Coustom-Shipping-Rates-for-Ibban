@@ -80,6 +80,25 @@ The carrier service used to run on Render (`ibban-b2b-shipping.onrender.com`). T
 3. Test a B2B and a DTC checkout (step 8), check the Vercel logs show the rate requests,
    then shut the Render service down.
 
+## Deploying the Function without a CLI login (GitHub Actions)
+
+The Function is deployed to the app that is installed on ibban.com —
+**ibBan B2B Shipping New** (client ID `ed90385ba90f0bfc5c460e5e3b3ac4f1`, config in
+[`shopify.app.ibban.toml`](shopify.app.ibban.toml)) — by the workflow
+[`.github/workflows/deploy-shopify-function.yml`](.github/workflows/deploy-shopify-function.yml).
+
+1. One-time: Dev Dashboard (Ibban.com org) → Apps → ibBan B2B Shipping New → Settings →
+   App CLI automation token → Manage → add a service account with *App development*
+   access to this app. Save its token as the repository secret
+   `SHOPIFY_SERVICE_ACCOUNT_TOKEN` (GitHub → Settings → Secrets and variables → Actions).
+   Tokens expire (1–6 months) — rotate the secret when it does.
+2. GitHub → Actions → **Deploy Shopify function** → Run workflow:
+   - *release* unticked: test run, creates a new app version only.
+   - *release* ticked: creates and releases it to the store.
+3. The run summary shows the live app config that was pulled and the CLI output.
+   The workflow never passes `--allow-deletes`, so it fails instead of removing a live
+   extension.
+
 ## Deploy runbook
 
 Prereqs: Node 20+, Git, Shopify CLI (`npm i -g @shopify/cli@latest`).

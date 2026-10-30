@@ -1,0 +1,25 @@
+# The app that is actually INSTALLED on ibban.com: "ibBan B2B Shipping New"
+# (Ibban.com organization). It owns the live delivery-customization Function
+# and the "ibBan B2B Shipping" carrier service.
+#
+# Deployed by .github/workflows/deploy-shopify-function.yml, which first runs
+# `shopify app config pull --config ibban`, so the live configuration (name,
+# scopes, URLs) is taken from Shopify and pushed back unchanged — only the
+# Function code changes. The values below are just a valid starting point.
+#
+# (shopify.app.toml is the older "GN B2B Shipping" app in the Grow Nest org,
+# which has no installs. Do not deploy that one to ibban.com.)
+
+client_id = "ed90385ba90f0bfc5c460e5e3b3ac4f1"
+name = "ibBan B2B Shipping New"
+application_url = "https://ibban-b2b-shipping.onrender.com"
+embedded = false
+
+[access_scopes]
+scopes = "write_shipping,write_delivery_customizations,read_products,read_inventory"
+
+[auth]
+redirect_urls = ["https://ibban-b2b-shipping.onrender.com/auth/callback"]
+
+[webhooks]
+api_version = "2026-01"

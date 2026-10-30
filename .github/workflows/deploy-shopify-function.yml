@@ -1,0 +1,81 @@
+# Deploys the B2B delivery-visibility Function to the app installed on
+# ibban.com ("ibBan B2B Shipping New") without any interactive CLI login.
+#
+# Needs one repository secret: SHOPIFY_SERVICE_ACCOUNT_TOKEN
+#   Dev Dashboard (Ibban.com org) → Apps → ibBan B2B Shipping New → Settings →
+#   App CLI automation token → Manage → service account with
+#   "App development" access to this app.
+#
+# Run it from GitHub → Actions → "Deploy Shopify function" → Run workflow.
+#   release unticked → safe test: builds and creates a new app version only.
+#   release ticked   → creates the version AND releases it to the store.
+# Deletions of extensions are never allowed (no --allow-deletes), so a
+# mismatch fails the run instead of removing the live function.
+
+name: Deploy Shopify function
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Release to the store (untick for a test run that only creates a version)"
+        type: boolean
+        default: false
+
+concurrency: shopify-deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SHOPIFY_SERVICE_ACCOUNT_TOKEN: ${{ secrets.SHOPIFY_SERVICE_ACCOUNT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check the token secret exists
+        run: |
+          if [ -z "$SHOPIFY_SERVICE_ACCOUNT_TOKEN" ]; then
+            echo "::error::Repository secret SHOPIFY_SERVICE_ACCOUNT_TOKEN is missing (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+      - name: Install Shopify CLI
+        run: npm install -g @shopify/cli@latest
+
+      - name: Install function dependencies and run its tests
+        run: |
+          npm ci --prefix extensions/b2b-delivery-visibility
+          npm test --prefix extensions/b2b-delivery-visibility
+
+      - name: Pull the live app configuration from Shopify
+        run: |
+          shopify app config pull --config ibban
+          {
+            echo "### Live app configuration (pulled from Shopify, deployed unchanged)"
+            echo '```toml'
+            cat shopify.app.ibban.toml
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy
+        run: |
+          set -o pipefail
+          if [ "${{ inputs.release }}" = "true" ]; then
+            shopify app deploy --config ibban --allow-updates 2>&1 | tee deploy.log
+          else
+            shopify app deploy --config ibban --allow-updates --no-release 2>&1 | tee deploy.log
+          fi
+
+      - name: Write the deploy output to the run summary
+        if: always()
+        run: |
+          {
+            echo "### Deploy output (release = ${{ inputs.release }})"
+            echo '```'
+            sed 's/\x1b\[[0-9;]*m//g' deploy.log 2>/dev/null | tail -80 || echo "deploy did not run"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
